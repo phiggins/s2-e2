@@ -17,8 +17,8 @@ MiniTest::Unit.autorun
 describe MiniFactory do
   it "should provide the most basic syntax" do
     MiniFactory.define User do |u|
-      u.first_name = 'John'
-      u.last_name  = 'Doe'
+      u.first_name 'John'
+      u.last_name  'Doe'
     end
 
     u = MiniFactory(:user)
