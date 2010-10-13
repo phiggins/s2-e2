@@ -1,20 +1,26 @@
 class MiniFactory
-  def self.define model, &block
+  class << self 
+    attr_accessor :factories
+  end
+  
+  def self.define name, &block
+    name = name.to_s.downcase.to_sym
     @factories ||= {}
-    @factories[model] = block
+    @factories[name] = block
   end
 
   def self.create name
-    model = symbol_to_model(name)
+    name = name.to_s.downcase.to_sym
+    model = model(name)
     proxy = Proxy.new(model.new)
-    @factories[ model ].call( proxy )
+    @factories[name].call( proxy )
     record = proxy.target
     record.save
     record
   end
 
-  def self.symbol_to_model symbol
-    Object.const_get symbol.to_s.capitalize
+  def self.model obj
+    Object.const_get obj.to_s.capitalize
   end
 
   class Proxy
