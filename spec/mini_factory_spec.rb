@@ -22,7 +22,7 @@ describe MiniFactory do
 
   it "should support basic factory_girl use case" do
     #MiniFactory.define :user do |u|
-    MiniFactory.define User do |u|
+    MiniFactory.define :user do |u|
       u.first_name 'John'
       u.last_name  'Doe'
     end
