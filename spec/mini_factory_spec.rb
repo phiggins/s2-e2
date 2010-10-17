@@ -35,6 +35,16 @@ describe MiniFactory do
   end
 
   describe ".define" do
+    it "should allow dependent attributes with a block" do
+      MiniFactory.define :user do |u|
+        u.first_name "Frank"
+        u.last_name "Rizzo"
+        u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
+      end
+
+      MiniFactory(:user).email.must_equal "Frank.Rizzo@example.com"
+    end
+
     it "should allow over-writing the default values as extra options" do
       MiniFactory.define :user do |u|
         u.first_name "Frank"
