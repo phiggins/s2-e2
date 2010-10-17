@@ -35,6 +35,15 @@ describe MiniFactory do
   end
 
   describe ".define" do
+    it "should allow over-writing the default values as extra options" do
+      MiniFactory.define :user do |u|
+        u.first_name "Frank"
+        u.last_name "Rizzo"
+      end
+
+      MiniFactory(:user, :last_name => "Sinatra").last_name.must_equal "Sinatra"
+    end
+
     it "should allow lazy attributes with a block" do
       email = "user.email@example.com"
 

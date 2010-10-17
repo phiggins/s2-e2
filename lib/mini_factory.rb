@@ -12,10 +12,10 @@ class MiniFactory
     factories[name] = new(name, opts, block)
   end
 
-  def self.create name
+  def self.create name, opts={}
     name = name.to_s.downcase.to_sym
     factory = factories[name]
-    factory.create
+    factory.create(opts)
   end
 
   def initialize name, opts={}, block
@@ -24,10 +24,11 @@ class MiniFactory
     @model  = opts[:class] || model
   end
 
-  def create
+  def create opts
     real_object = @model.new
     proxy = Proxy.new(real_object)
     @block.call(proxy)
+    opts.each {|k,v| proxy.send(k,v) }
     real_object.save
   end
 
@@ -53,5 +54,5 @@ class MiniFactory
 end
 
 def MiniFactory(name, attrs={})
-  MiniFactory.create(name) 
+  MiniFactory.create(name, attrs) 
 end
