@@ -43,7 +43,11 @@ class MiniFactory
     end
 
     def method_missing method, *args, &block
-      @target.send( "#{method}=", *args, &block )
+      if block
+        @target.send( "#{method}=", block.call )
+      else
+        @target.send( "#{method}=", *args )
+      end
     end
   end
 end

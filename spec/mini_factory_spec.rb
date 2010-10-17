@@ -7,6 +7,7 @@ DB.create_table :users do
   primary_key :id
   String :first_name
   String :last_name
+  String :email
   Boolean :admin
 end
 
@@ -34,6 +35,16 @@ describe MiniFactory do
   end
 
   describe ".define" do
+    it "should allow lazy attributes with a block" do
+      email = "user.email@example.com"
+
+      MiniFactory.define :user do |u|
+        u.email { email }
+      end
+
+      MiniFactory(:user).email.must_equal email
+    end
+
     it "should allow specifying the class with :class option" do
       MiniFactory.define :admin, :class => User do |u|
         u.first_name 'Admin'
