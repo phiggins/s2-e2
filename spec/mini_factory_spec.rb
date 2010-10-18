@@ -35,6 +35,28 @@ describe MiniFactory do
   end
 
   describe ".define" do
+    it "should allow over-written attributes to be used with dependent attributes" do
+      MiniFactory.define :user do |u|
+        u.first_name "Frank"
+        u.last_name "Rizzo"
+        u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
+      end
+
+      user = MiniFactory(:user, :last_name => "Sinatra")
+      user.email.must_equal "Frank.Sinatra@example.com"
+    end
+
+    it "should allow dependent attributes to be over-writable" do
+      MiniFactory.define :user do |u|
+        u.first_name "Frank"
+        u.last_name "Rizzo"
+        u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
+      end
+
+      user = MiniFactory(:user, :email => "custom_email@example.com")
+      user.email.must_equal "custom_email@example.com"
+    end
+
     it "should allow dependent attributes with a block" do
       MiniFactory.define :user do |u|
         u.first_name "Frank"

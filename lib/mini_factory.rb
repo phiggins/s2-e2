@@ -27,27 +27,40 @@ class MiniFactory
   def create opts
     real_object = @model.new
     proxy = Proxy.new(real_object)
-    @block.call(proxy)
     opts.each {|k,v| proxy.send(k,v) }
+    @block.call(proxy)
     real_object.save
   end
 
   def model
-    Object.const_get @name.to_s.capitalize
+    Object.const_get(@name.to_s.capitalize)
   end
 
   class Proxy
     attr_reader :target
 
     def initialize target
-      @target = target
+      @target   = target
+      @proxied  = []
+    end
+
+    def proxied? method
+      @proxied.include? method.to_s
+    end
+  
+    def proxied method
+      @proxied << method.to_s
     end
 
     def method_missing method, *args, &block
-      if block
-        @target.send( "#{method}=", block.call(@target) )
-      else
-        @target.send( "#{method}=", *args )
+      unless proxied? method
+        if block
+          @target.send( "#{method}=", block.call(@target) )
+        else
+          @target.send( "#{method}=", *args )
+        end
+        
+        proxied method.to_s
       end
     end
   end
