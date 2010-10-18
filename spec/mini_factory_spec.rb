@@ -21,6 +21,15 @@ describe MiniFactory do
     MiniFactory.clear_state!
   end
 
+  it "should allow overwriting of sequence'd attributes" do
+    MiniFactory.define :user do |u|
+      u.sequence(:email) {|n| "person#{n}@example.com" }
+    end
+
+    user = MiniFactory(:user, :email => "custom_email@example.com")
+    user.email.must_equal "custom_email@example.com"
+  end
+
   it "should support Factory-level sequences" do
     MiniFactory.define :user do |u|
       u.sequence(:email) {|n| "person#{n}@example.com" }
