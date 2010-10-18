@@ -9,6 +9,10 @@ class MiniFactory
   
   def self.define name, opts={}, &block
     name = name.to_s.downcase.to_sym
+    
+    parent = opts.delete(:parent)
+    opts[:parent] = factories[parent] if parent
+
     factories[name] = new(name, opts, block)
   end
 
@@ -18,10 +22,24 @@ class MiniFactory
     factory.create(opts)
   end
 
+  attr_reader :name, :block, :model
+
   def initialize name, opts={}, block
     @name   = name
-    @block  = block
-    @model  = opts[:class] || model
+
+    @parent = opts[:parent]
+
+    if @parent
+      @block = lambda do |obj|
+        block.call(obj)
+        @parent.block.call(obj)
+      end
+
+      @model = @parent.model
+    else
+      @block  = block
+      @model  = opts[:class] || model
+    end
   end
 
   def create opts

@@ -35,6 +35,32 @@ describe MiniFactory do
   end
 
   describe ".define" do
+    it "should allow factories inheriting others to overwrite values" do
+      MiniFactory.define :user do |u|
+        u.admin false
+      end
+
+      MiniFactory.define :admin, :parent => :user do |u|
+        u.admin true
+      end
+
+      MiniFactory(:admin).admin.must_equal true
+    end
+    
+    it "should allow factories to inherit from other factories" do
+      MiniFactory.define :user do |u|
+        u.first_name "Frank"
+      end
+
+      MiniFactory.define :admin, :parent => :user do |u|
+        u.admin true
+      end
+
+      admin_user = MiniFactory(:admin)
+      admin_user.admin.must_equal true
+      admin_user.first_name.must_equal "Frank"
+    end
+
     it "should allow over-written attributes to be used with dependent attributes" do
       MiniFactory.define :user do |u|
         u.first_name "Frank"
