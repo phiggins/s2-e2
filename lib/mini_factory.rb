@@ -60,7 +60,7 @@ class MiniFactory
           @target.send( "#{method}=", *args )
         end
         
-        proxied method.to_s
+        proxied method
       end
     end
   end
