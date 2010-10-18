@@ -18,7 +18,25 @@ MiniTest::Unit.autorun
 
 describe MiniFactory do
   before do
-    MiniFactory.clear_factories!
+    MiniFactory.clear_state!
+  end
+
+  it "should support Factory-level sequences" do
+    MiniFactory.define :user do |u|
+      u.sequence(:email) {|n| "person#{n}@example.com" }
+    end
+
+    MiniFactory(:user).email.must_equal "person1@example.com"
+    MiniFactory(:user).email.must_equal "person2@example.com"
+  end
+
+  it "should support sequences" do
+    MiniFactory.sequence :email do |n|
+      "person#{n}@example.com"
+    end
+
+    MiniFactory.next(:email).must_equal "person1@example.com"
+    MiniFactory.next(:email).must_equal "person2@example.com"
   end
 
   it "should support basic factory_girl use case" do

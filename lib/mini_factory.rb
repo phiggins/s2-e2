@@ -1,6 +1,19 @@
 class MiniFactory
-  def self.clear_factories!
+  def self.clear_state!
     @factories = nil
+    @sequences = nil
+  end
+
+  def self.sequences
+    @sequences ||= {}
+  end
+
+  def self.sequence name, &block
+    sequences[name] = Sequence.new(block)
+  end
+
+  def self.next name
+    sequences[name].next
   end
 
   def self.factories
@@ -44,7 +57,7 @@ class MiniFactory
 
   def create opts
     real_object = @model.new
-    proxy = Proxy.new(real_object)
+    proxy = Proxy.new(self, real_object)
     opts.each {|k,v| proxy.send(k,v) }
     @block.call(proxy)
     real_object.save
@@ -53,11 +66,34 @@ class MiniFactory
   def model
     Object.const_get(@name.to_s.capitalize)
   end
+  
+  def sequences
+    @sequences ||= {}
+  end
+
+  def sequence name, block
+    s = Sequence.new(block)
+    sequences[name] = s
+    s.next
+  end
+
+  class Sequence
+    def initialize block
+      @block  = block
+      @n      = 0
+    end
+
+    def next
+      @n += 1
+      @block.call(@n)
+    end
+  end
 
   class Proxy
     attr_reader :target
 
-    def initialize target
+    def initialize factory, target
+      @factory  = factory
       @target   = target
       @proxied  = []
     end
@@ -71,7 +107,20 @@ class MiniFactory
     end
 
     def method_missing method, *args, &block
-      unless proxied? method
+      case
+      when method == :sequence
+        name = args.first
+        sequences = @factory.sequences
+        val = if sequences[name]
+          sequences[name].next
+        else
+          @factory.sequence(name, block)
+        end
+
+        @target.send("#{name}=", val)
+      when proxied?(method)
+        # no-op
+      else
         if block
           @target.send( "#{method}=", block.call(@target) )
         else
