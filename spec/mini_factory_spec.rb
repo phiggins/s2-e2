@@ -5,13 +5,24 @@ DB = Sequel.sqlite
 
 DB.create_table :users do
   primary_key :id
-  String :first_name
-  String :last_name
-  String :email
-  Boolean :admin
+  String      :first_name
+  String      :last_name
+  String      :email
+  Boolean     :admin
 end
 
-class User < Sequel::Model ; end
+DB.create_table :posts do
+  primary_key :id
+  Integer     :author_id
+end
+
+class User < Sequel::Model
+  one_to_many :posts, :key => :author_id
+end
+
+class Post < Sequel::Model
+  many_to_one :author, :class => User
+end
 
 require 'minitest/spec'
 MiniTest::Unit.autorun
@@ -19,6 +30,19 @@ MiniTest::Unit.autorun
 describe MiniFactory do
   before do
     MiniFactory.clear_state!
+  end
+
+  it "should allow creation of associated objects" do
+    MiniFactory.define :user do |u|
+      u.first_name "blah"
+    end
+
+    MiniFactory.define :post do |p|
+      p.author {|a| a.association(:user) }
+    end
+
+    post = MiniFactory(:post)
+    post.author.must_be_kind_of User
   end
 
   it "should allow overwriting of sequence'd attributes" do
@@ -61,122 +85,120 @@ describe MiniFactory do
     u.admin.must_equal false
   end
 
-  describe ".define" do
-    it "should allow factories inheriting others to overwrite values" do
-      MiniFactory.define :user do |u|
-        u.admin false
-      end
-
-      MiniFactory.define :admin, :parent => :user do |u|
-        u.admin true
-      end
-
-      MiniFactory(:admin).admin.must_equal true
-    end
-    
-    it "should allow factories to inherit from other factories" do
-      MiniFactory.define :user do |u|
-        u.first_name "Frank"
-      end
-
-      MiniFactory.define :admin, :parent => :user do |u|
-        u.admin true
-      end
-
-      admin_user = MiniFactory(:admin)
-      admin_user.admin.must_equal true
-      admin_user.first_name.must_equal "Frank"
+  it "should allow factories inheriting others to overwrite values" do
+    MiniFactory.define :user do |u|
+      u.admin false
     end
 
-    it "should allow over-written attributes to be used with dependent attributes" do
-      MiniFactory.define :user do |u|
-        u.first_name "Frank"
-        u.last_name "Rizzo"
-        u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
-      end
-
-      user = MiniFactory(:user, :last_name => "Sinatra")
-      user.email.must_equal "Frank.Sinatra@example.com"
+    MiniFactory.define :admin, :parent => :user do |u|
+      u.admin true
     end
 
-    it "should allow dependent attributes to be over-writable" do
-      MiniFactory.define :user do |u|
-        u.first_name "Frank"
-        u.last_name "Rizzo"
-        u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
-      end
-
-      user = MiniFactory(:user, :email => "custom_email@example.com")
-      user.email.must_equal "custom_email@example.com"
+    MiniFactory(:admin).admin.must_equal true
+  end
+  
+  it "should allow factories to inherit from other factories" do
+    MiniFactory.define :user do |u|
+      u.first_name "Frank"
     end
 
-    it "should allow dependent attributes with a block" do
-      MiniFactory.define :user do |u|
-        u.first_name "Frank"
-        u.last_name "Rizzo"
-        u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
-      end
-
-      MiniFactory(:user).email.must_equal "Frank.Rizzo@example.com"
+    MiniFactory.define :admin, :parent => :user do |u|
+      u.admin true
     end
 
-    it "should allow over-writing the default values as extra options" do
-      MiniFactory.define :user do |u|
-        u.first_name "Frank"
-        u.last_name "Rizzo"
-      end
+    admin_user = MiniFactory(:admin)
+    admin_user.admin.must_equal true
+    admin_user.first_name.must_equal "Frank"
+  end
 
-      MiniFactory(:user, :last_name => "Sinatra").last_name.must_equal "Sinatra"
+  it "should allow over-written attributes to be used with dependent attributes" do
+    MiniFactory.define :user do |u|
+      u.first_name "Frank"
+      u.last_name "Rizzo"
+      u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
     end
 
-    it "should allow lazy attributes with a block" do
-      email = "user.email@example.com"
+    user = MiniFactory(:user, :last_name => "Sinatra")
+    user.email.must_equal "Frank.Sinatra@example.com"
+  end
 
-      MiniFactory.define :user do |u|
-        u.email { email }
-      end
-
-      MiniFactory(:user).email.must_equal email
+  it "should allow dependent attributes to be over-writable" do
+    MiniFactory.define :user do |u|
+      u.first_name "Frank"
+      u.last_name "Rizzo"
+      u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
     end
 
-    it "should allow specifying the class with :class option" do
-      MiniFactory.define :admin, :class => User do |u|
-        u.first_name 'Admin'
-        u.last_name  'User'
-        u.admin true
-      end
+    user = MiniFactory(:user, :email => "custom_email@example.com")
+    user.email.must_equal "custom_email@example.com"
+  end
 
-      MiniFactory(:admin).must_be_kind_of User
+  it "should allow dependent attributes with a block" do
+    MiniFactory.define :user do |u|
+      u.first_name "Frank"
+      u.last_name "Rizzo"
+      u.email {|user| "#{user.first_name}.#{user.last_name}@example.com" }
     end
 
-    it "should accept a model" do
-      MiniFactory.define User do |u|
-        u.first_name 'John'
-        u.last_name  'Doe'
-        u.admin false
-      end
+    MiniFactory(:user).email.must_equal "Frank.Rizzo@example.com"
+  end
 
-      MiniFactory(:user).must_be_kind_of User
+  it "should allow over-writing the default values as extra options" do
+    MiniFactory.define :user do |u|
+      u.first_name "Frank"
+      u.last_name "Rizzo"
     end
 
-    it "should accept a symbol" do
-      MiniFactory.define :user do |u|
-        u.first_name 'John'
-        u.last_name  'Doe'
-        u.admin false
-      end
+    MiniFactory(:user, :last_name => "Sinatra").last_name.must_equal "Sinatra"
+  end
 
-      MiniFactory(:user).must_be_kind_of User
+  it "should allow lazy attributes with a block" do
+    email = "user.email@example.com"
+
+    MiniFactory.define :user do |u|
+      u.email { email }
     end
 
-    it "should accept a string" do
-      MiniFactory.define "user" do |u|
-        u.first_name 'John'
-        u.last_name  'Doe'
-        u.admin false
-      end
+    MiniFactory(:user).email.must_equal email
+  end
 
-      MiniFactory(:user).must_be_kind_of User
+  it "should allow specifying the class with :class option" do
+    MiniFactory.define :admin, :class => User do |u|
+      u.first_name 'Admin'
+      u.last_name  'User'
+      u.admin true
     end
+
+    MiniFactory(:admin).must_be_kind_of User
+  end
+
+  it "should accept a model" do
+    MiniFactory.define User do |u|
+      u.first_name 'John'
+      u.last_name  'Doe'
+      u.admin false
+    end
+
+    MiniFactory(:user).must_be_kind_of User
+  end
+
+  it "should accept a symbol" do
+    MiniFactory.define :user do |u|
+      u.first_name 'John'
+      u.last_name  'Doe'
+      u.admin false
+    end
+
+    MiniFactory(:user).must_be_kind_of User
+  end
+
+  it "should accept a string" do
+    MiniFactory.define "user" do |u|
+      u.first_name 'John'
+      u.last_name  'Doe'
+      u.admin false
+    end
+
+    MiniFactory(:user).must_be_kind_of User
   end
 end

@@ -106,15 +106,18 @@ class MiniFactory
     end
 
     def method_missing method, *args, &block
-      if method == :sequence
+      if method == :association
+        name  = args.first
+        @factory.class.create(name)
+      elsif method == :sequence
         name  = args.first
         val   = @factory.sequence(name, block)
 
         send(name, val)
       elsif proxied?(method)
-        # no-op. If the method has already been proxied, let it fall through.
+        @target.send(method)
       else
-        val = block ? block.call(@target) : args.first
+        val = block ? block.call(self) : args.first
         @target.send( "#{method}=", val )
         
         proxied method
