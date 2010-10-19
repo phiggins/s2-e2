@@ -117,7 +117,7 @@ class MiniFactory
           @factory.sequence(name, block)
         end
 
-        @target.send("#{name}=", val)
+        send(name, val)
       when proxied?(method)
         # no-op
       else
