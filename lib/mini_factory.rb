@@ -1,3 +1,6 @@
+require 'mini_factory/proxy'
+require 'mini_factory/sequence'
+
 class MiniFactory
   def self.clear_state!
     @factories = nil
@@ -76,57 +79,8 @@ class MiniFactory
     sequences[name] ||= Sequence.new(block)
     sequences[name].next
   end
-
-  class Sequence
-    def initialize block
-      @block  = block
-      @n      = 0
-    end
-
-    def next
-      @n += 1
-      @block.call(@n)
-    end
-  end
-
-  class Proxy
-    attr_reader :target
-
-    def initialize factory, target
-      @factory  = factory
-      @target   = target
-      @proxied  = []
-    end
-
-    def proxied? method
-      @proxied.include? method.to_s
-    end
-  
-    def proxied method
-      @proxied << method.to_s
-    end
-
-    def method_missing method, *args, &block
-      if method == :association
-        name  = args.first
-        @factory.class.create(name)
-      elsif method == :sequence
-        name  = args.first
-        val   = @factory.sequence(name, block)
-
-        send(name, val)
-      elsif proxied?(method)
-        @target.send(method)
-      else
-        val = block ? block.call(self) : args.first
-        @target.send( "#{method}=", val )
-        
-        proxied method
-      end
-    end
-  end
 end
 
-def MiniFactory(name, attrs={})
-  MiniFactory.create(name, attrs) 
+def MiniFactory(name, opts={})
+  MiniFactory.create(name, opts) 
 end
