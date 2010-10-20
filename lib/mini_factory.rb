@@ -61,6 +61,7 @@ class MiniFactory
     opts.each {|k,v| proxy.send(k,v) }
     @block.call(proxy)
     real_object.save
+    real_object
   end
 
   def model

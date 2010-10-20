@@ -1,7 +1,16 @@
 require 'mini_factory'
 require 'minitest/autorun'
 
-require 'sequel_helper'
+# Lame, I know...
+if %w[ ar active_record activerecord ].include? ENV['ORM']
+  orm = 'activerecord'
+  require 'activerecord_helper'
+else
+  orm = 'sequel'
+  require 'sequel_helper'
+end
+
+puts "Running specs with #{orm}."
 
 describe MiniFactory do
   before do
