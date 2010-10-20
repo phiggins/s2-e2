@@ -4,12 +4,11 @@ require 'minitest/autorun'
 # Lame, I know...
 if %w[ ar active_record activerecord ].include? ENV['ORM']
   orm = 'activerecord'
-  require 'activerecord_helper'
 else
   orm = 'sequel'
-  require 'sequel_helper'
 end
 
+require "#{orm}_helper"
 puts "Running specs with #{orm}."
 
 describe MiniFactory do
@@ -17,17 +16,34 @@ describe MiniFactory do
     MiniFactory.clear_state!
   end
 
-  it "should allow creation of associated objects" do
+  # XXX: factory_girl had to provide an array when used with a many-to-one,
+  # so I don't feel bad about having to take the same shortcut.
+  it "should allow creation of many-to-* associated objects" do
+    skip "spec fails with Sequel"
     MiniFactory.define :user do |u|
-      u.first_name "blah"
+      u.posts {|user| [user.association(:post, :text => "Hi!")] }
+    end
+  
+   MiniFactory.define :post do |p|
+      p.text "First post!!1"
+    end
+  
+    user = MiniFactory(:user)
+    user.posts.first.text.must_equal "Hi!"
+  end
+
+  it "should allow creation of one-to-* associated objects" do
+    MiniFactory.define :user do |u|
+      u.first_name "Frank"
     end
 
     MiniFactory.define :post do |p|
-      p.author {|a| a.association(:user) }
+      p.author {|post| post.association(:user, :last_name => "Sinatra") }
     end
 
-    post = MiniFactory(:post)
-    post.author.must_be_kind_of User
+    author = MiniFactory(:post).author
+    author.first_name.must_equal "Frank"
+    author.last_name.must_equal "Sinatra" 
   end
 
   it "should allow overwriting of sequence'd attributes" do
